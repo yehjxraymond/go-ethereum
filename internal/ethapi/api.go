@@ -1054,6 +1054,17 @@ type ExecutionResult struct {
 	StructLogs  []StructLogRes `json:"structLogs"`
 }
 
+type StateObjectTrace struct {
+	Balance *big.Int           `json:"balance"`
+	Storage *map[string]string `json:"storage,omitempty"`
+}
+type TransactionStateTrace = *map[string]StateObjectTrace
+type StateTraceResult struct {
+	Transactions []TransactionStateTrace `json:"transactions"`
+	State        TransactionStateTrace   `json:"state"`
+	OriginState  TransactionStateTrace   `json:"originState"`
+}
+
 // StructLogRes stores a structured log emitted by the EVM while replaying a
 // transaction in debug mode
 type StructLogRes struct {

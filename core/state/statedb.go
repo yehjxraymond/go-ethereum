@@ -193,6 +193,10 @@ func (s *StateDB) AddLog(log *types.Log) {
 	s.logSize++
 }
 
+func (s *StateDB) GetStateObjects() (map[common.Address]*stateObject, map[common.Address]struct{}, map[common.Address]struct{}) {
+	return s.stateObjects, s.stateObjectsPending, s.stateObjectsDirty
+}
+
 func (s *StateDB) GetLogs(hash common.Hash) []*types.Log {
 	return s.logs[hash]
 }
