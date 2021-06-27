@@ -930,7 +930,7 @@ func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, b
 			}
 
 			state[stateAddr.String()] = ethapi.StateObjectTrace{
-				Balance: stateObj.Balance(),
+				Balance: "0x" + stateObj.Balance().Text(16),
 				Storage: &storage,
 			}
 
@@ -956,7 +956,7 @@ func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, b
 			originState[slot] = stateObj.String()
 		}
 		stateOrigin[stateAddr] = ethapi.StateObjectTrace{
-			Balance: originalBalance,
+			Balance: "0x" + originalBalance.Text(16),
 			Storage: &originState,
 		}
 	}

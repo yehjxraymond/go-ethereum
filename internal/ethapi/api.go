@@ -1055,7 +1055,7 @@ type ExecutionResult struct {
 }
 
 type StateObjectTrace struct {
-	Balance *big.Int           `json:"balance"`
+	Balance string             `json:"balance"`
 	Storage *map[string]string `json:"storage,omitempty"`
 }
 type TransactionStateTrace = *map[string]StateObjectTrace
