@@ -873,8 +873,9 @@ func APIs(backend Backend) []rpc.API {
 func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, config *TraceCallConfig) (interface{}, error) {
 	// Try to retrieve the specified block
 	var (
-		err   error
-		block *types.Block
+		err      error
+		block    *types.Block
+		totalGas uint64
 	)
 	if hash, ok := blockNrOrHash.Hash(); ok {
 		block, err = api.blockByHash(ctx, hash)
@@ -914,11 +915,14 @@ func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, b
 		txctx := new(txTraceContext)
 		statedb.Prepare(txctx.hash, txctx.block, i)
 		vmenv := vm.NewEVM(blockCtx, core.NewEVMTxContext(msg), statedb, api.backend.ChainConfig(), vm.Config{})
-		if _, err := core.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(msg.Gas())); err != nil {
+
+		result, err := core.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(msg.Gas()))
+		if err != nil {
 			return nil, err
 		}
 
 		obj, _, _ := statedb.GetStateObjects()
+		var txState ethapi.TransactionStateTrace
 		state := make(map[string]ethapi.StateObjectTrace)
 
 		for stateAddr, stateObj := range obj {
@@ -935,7 +939,10 @@ func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, b
 			}
 
 		}
-		stateTraceResult.Transactions = append(stateTraceResult.Transactions, &state)
+		txState.StateObject = &state
+		txState.Gas = result.UsedGas
+		totalGas += result.UsedGas
+		stateTraceResult.Transactions = append(stateTraceResult.Transactions, txState)
 
 		// Finalize the state so any modifications are written to the trie
 		// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
@@ -943,12 +950,13 @@ func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, b
 	}
 
 	stateTraceResult.State = stateTraceResult.Transactions[len(stateTraceResult.Transactions)-1]
+	stateTraceResult.State.Gas = totalGas
 
 	// Compute original state
 	statedbOrigin, err := api.backend.StateAtBlock(ctx, block, reexec, nil, true)
 	stateOrigin := make(map[string]ethapi.StateObjectTrace)
 
-	for stateAddr, state := range *stateTraceResult.State {
+	for stateAddr, state := range *stateTraceResult.State.StateObject {
 		originalBalance := statedbOrigin.GetBalance(common.HexToAddress(stateAddr))
 		originState := make(map[string]string)
 		for slot, _ := range *state.Storage {
@@ -960,7 +968,7 @@ func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, b
 			Storage: &originState,
 		}
 	}
-	stateTraceResult.OriginState = &stateOrigin
+	stateTraceResult.OriginState.StateObject = &stateOrigin
 
 	return stateTraceResult, nil
 }

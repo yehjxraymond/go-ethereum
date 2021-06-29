@@ -1058,7 +1058,10 @@ type StateObjectTrace struct {
 	Balance string             `json:"balance"`
 	Storage *map[string]string `json:"storage,omitempty"`
 }
-type TransactionStateTrace = *map[string]StateObjectTrace
+type TransactionStateTrace struct {
+	StateObject *map[string]StateObjectTrace `json:"state"`
+	Gas         uint64                       `json:"gas,omitempty"`
+}
 type StateTraceResult struct {
 	Transactions []TransactionStateTrace `json:"transactions"`
 	State        TransactionStateTrace   `json:"state"`
