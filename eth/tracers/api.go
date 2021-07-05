@@ -873,14 +873,20 @@ func APIs(backend Backend) []rpc.API {
 func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, config *TraceCallConfig) (interface{}, error) {
 	// Try to retrieve the specified block
 	var (
-		err      error
-		block    *types.Block
-		totalGas uint64
+		err        error
+		block      *types.Block
+		stateBlock *types.Block // Used when state is not calculated for pending block
+		totalGas   uint64
 	)
 	if hash, ok := blockNrOrHash.Hash(); ok {
 		block, err = api.blockByHash(ctx, hash)
+		stateBlock = block
 	} else if number, ok := blockNrOrHash.Number(); ok {
 		block, err = api.blockByNumber(ctx, number)
+		stateBlock = block
+		if number == -2 {
+			stateBlock, err = api.blockByNumber(ctx, -1)
+		}
 	} else {
 		return nil, errors.New("invalid arguments; neither block nor hash specified")
 	}
@@ -892,7 +898,7 @@ func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, b
 	if config != nil && config.Reexec != nil {
 		reexec = *config.Reexec
 	}
-	statedb, err := api.backend.StateAtBlock(ctx, block, reexec, nil, true)
+	statedb, err := api.backend.StateAtBlock(ctx, stateBlock, reexec, nil, true)
 	if err != nil {
 		return nil, err
 	}
@@ -953,7 +959,7 @@ func (api *API) TraceCalls(ctx context.Context, args []ethapi.TransactionArgs, b
 	stateTraceResult.State.Gas = totalGas
 
 	// Compute original state
-	statedbOrigin, err := api.backend.StateAtBlock(ctx, block, reexec, nil, true)
+	statedbOrigin, err := api.backend.StateAtBlock(ctx, stateBlock, reexec, nil, true)
 	stateOrigin := make(map[string]ethapi.StateObjectTrace)
 
 	for stateAddr, state := range *stateTraceResult.State.StateObject {
