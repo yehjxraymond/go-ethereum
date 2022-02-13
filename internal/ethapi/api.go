@@ -1131,6 +1131,19 @@ type ExecutionResult struct {
 	ReturnValue string         `json:"returnValue"`
 	StructLogs  []StructLogRes `json:"structLogs"`
 }
+type StateObjectTrace struct {
+	Balance string             `json:"balance"`
+	Storage *map[string]string `json:"storage,omitempty"`
+}
+type TransactionStateTrace struct {
+	StateObject *map[string]StateObjectTrace `json:"state"`
+	Gas         uint64                       `json:"gas,omitempty"`
+}
+type StateTraceResult struct {
+	Transactions []TransactionStateTrace `json:"transactions"`
+	State        TransactionStateTrace   `json:"state"`
+	OriginState  TransactionStateTrace   `json:"originState"`
+}
 
 // StructLogRes stores a structured log emitted by the EVM while replaying a
 // transaction in debug mode

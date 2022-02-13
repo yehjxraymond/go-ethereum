@@ -168,6 +168,11 @@ func (s *stateObject) getTrie(db Database) Trie {
 	return s.trie
 }
 
+// GetDirtyStorage retrieves the dirty storage
+func (s *stateObject) GetDirtyStorage() Storage {
+	return s.dirtyStorage
+}
+
 // GetState retrieves a value from the account storage trie.
 func (s *stateObject) GetState(db Database, key common.Hash) common.Hash {
 	// If the fake storage is set, only lookup the state here(in the debugging mode)
